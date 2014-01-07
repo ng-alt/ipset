@@ -1,3 +1,12 @@
+6.20.2
+  - Follow manual page behavior for SET target on list:set
+    (Sergey Popovich)
+  - use rbtree postorder iteration instead of opencoding
+    (Cody P Schafer)
+  - Typo in ip_set_hash_netnet.c fixed (David Binderman)
+  - Add hash: fix coccinelle warnings (Fengguang Wu)
+  - remove unused code (Stephen Hemminger)
+
 6.20.1
   - netfilter: ipset: remove duplicate define (Michael Opdenacker)
   - net->user_ns is available starting from 3.8, add compatibility
