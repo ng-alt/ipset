@@ -1,3 +1,14 @@
+6.20.2
+  - fix timeout data type size (Nikolay Martynov)
+  - Fix malformed output from list/save for ICMP types in port field.
+    (Sergey Popovich)
+  - Fix all set output from list/save when set with counters in use.
+    (Sergey Popovich)
+  - manpage: remove spare comma for hash:net,net test action.
+    (Mart Frauenlob)
+  - manpage: correct add action synopsis for hash:net,port,net.
+    (Mart Frauenlob)
+
 6.20.1
   - build: fix incorrect library versioning (Jan Engelhardt)
   - netfilter: ipset: Fix configure failure when --with-kmod=no
