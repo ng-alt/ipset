@@ -42,7 +42,7 @@ oldmakefile() {
 	lineno=$((lineno-1))
 	head -n $lineno $file > $file.head
 	lineno=$((lineno+1))
-	tail +$lineno $file > $file.tail
+	tail -n +$lineno $file > $file.tail
 	cp $file $file.orig
 	cat $file.head Makefile.ipset Makefile.export.ipset $file.tail > $file
 }
