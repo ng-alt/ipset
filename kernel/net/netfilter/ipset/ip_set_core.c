@@ -1194,7 +1194,7 @@ ip_set_dump_done(struct netlink_callback *cb)
 		ip_set_id_t index = (ip_set_id_t) cb->args[IPSET_CB_INDEX];
 		struct ip_set *set = ip_set(inst, index);
 
-		if (set->variant->uref && cb->args[IPSET_CB_PRIVATE])
+		if (set->variant->uref)
 			set->variant->uref(set, cb, false);
 		pr_debug("release set %s\n", set->name);
 		__ip_set_put_byindex(inst, index);
@@ -1262,7 +1262,6 @@ ip_set_dump_start(struct sk_buff *skb, struct netlink_callback *cb)
 	struct ip_set_net *inst = ip_set_pernet(sock_net(skb->sk));
 	u32 dump_type, dump_flags;
 	int ret = 0;
-	bool uref = false;
 
 	if (!cb->args[IPSET_CB_DUMP]) {
 		ret = dump_init(cb, inst);
@@ -1336,10 +1335,8 @@ dump_last:
 				goto release_refcount;
 			if (dump_flags & IPSET_FLAG_LIST_HEADER)
 				goto next_set;
-			if (set->variant->uref) {
-				uref = true;
+			if (set->variant->uref)
 				set->variant->uref(set, cb, true);
-			}
 			/* Fall through and add elements */
 		default:
 			rcu_read_lock_bh();
@@ -1356,10 +1353,8 @@ dump_last:
 		dump_type = DUMP_LAST;
 		cb->args[IPSET_CB_DUMP] = dump_type | (dump_flags << 16);
 		cb->args[IPSET_CB_INDEX] = 0;
-		if (uref) {
-			uref = false;
+		if (set && set->variant->uref)
 			set->variant->uref(set, cb, false);
-		}
 		goto dump_last;
 	}
 	goto out;
@@ -1374,7 +1369,10 @@ next_set:
 release_refcount:
 	/* If there was an error or set is done, release set */
 	if (ret || !cb->args[IPSET_CB_ARG0]) {
-		pr_debug("release set %s\n", ip_set(inst, index)->name);
+		set = ip_set(inst, index);
+		if (set->variant->uref)
+			set->variant->uref(set, cb, false);
+		pr_debug("release set %s\n", set->name);
 		__ip_set_put_byindex(inst, index);
 		cb->args[IPSET_CB_ARG0] = 0;
 	}
@@ -1384,8 +1382,6 @@ out:
 		pr_debug("nlmsg_len: %u\n", nlh->nlmsg_len);
 		dump_attrs(nlh);
 	}
-	if (uref)
-		set->variant->uref(set, cb, false);
 
 	return ret < 0 ? ret : skb->len;
 }

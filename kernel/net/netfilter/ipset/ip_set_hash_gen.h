@@ -566,7 +566,8 @@ retry:
 
 	spin_lock_bh(&set->lock);
 	orig = h->table;
-	atomic_inc(&orig->ref);
+	atomic_set(&orig->ref, 1);
+	atomic_inc(&orig->uref);
 	pr_debug("attempt to resize set %s from %u to %u, t %p\n",
 		 set->name, orig->htable_bits, htable_bits, orig);
 	for (i = 0; i < jhash_size(orig->htable_bits); i++) {
@@ -610,9 +611,10 @@ retry:
 						ret = -ENOMEM;
 				}
 				if (ret < 0) {
+					atomic_set(&orig->ref, 0);
+					atomic_dec(&orig->uref);
 					spin_unlock_bh(&set->lock);
 					mtype_ahash_destroy(set, t, false);
-					atomic_dec(&orig->ref);
 					if (ret == -EAGAIN)
 						goto retry;
 					return ret;
@@ -641,8 +643,10 @@ retry:
 	pr_debug("set %s resized from %u (%p) to %u (%p)\n", set->name,
 		 orig->htable_bits, orig, t->htable_bits, t);
 	/* If there's nobody else dumping the table, destroy it */
-	if (atomic_read(&orig->uref) == 0)
+	if (atomic_dec_and_test(&orig->uref)) {
+		pr_debug("Table destroy by resize %p\n", orig);
 		mtype_ahash_destroy(set, orig, false);
+	}
 
 	return 0;
 
@@ -1053,11 +1057,13 @@ mtype_uref(struct ip_set *set, struct netlink_callback *cb, bool start)
 		atomic_inc(&t->uref);
 		cb->args[IPSET_CB_PRIVATE] = (unsigned long) t;
 		rcu_read_unlock_bh();
-	} else {
+	} else if (cb->args[IPSET_CB_PRIVATE]) {
 		t = (struct htable *) cb->args[IPSET_CB_PRIVATE];
-		if (atomic_dec_and_test(&t->uref) && atomic_read(&t->ref))
+		if (atomic_dec_and_test(&t->uref) && atomic_read(&t->ref)) {
 			/* Resizing didn't destroy the hash table */
+			pr_debug("Table destroy by dump: %p\n", t);
 			mtype_ahash_destroy(set, t, false);
+		}
 		cb->args[IPSET_CB_PRIVATE] = 0;
 	}
 }
