@@ -279,8 +279,6 @@ static inline int nla_put_in6_addr(struct sk_buff *skb, int attrtype,
 #include <linux/if_vlan.h>
 static inline __be16 tc_skb_protocol(const struct sk_buff *skb)
 {
-	if (vlan_tx_tag_present(skb))
-		return skb->vlan_proto;
 	return skb->protocol;
 }
 #endif
