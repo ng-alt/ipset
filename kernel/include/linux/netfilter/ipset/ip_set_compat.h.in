@@ -118,7 +118,7 @@ do {				\
 } while (0)
 
 #define kfree_rcu(ptr, rcu_head)	\
-	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
+	kfree(ptr)
 #endif
 
 #ifdef CHECK_KCONFIG
